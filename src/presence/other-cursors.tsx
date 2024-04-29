@@ -2,11 +2,7 @@ import * as React from "react";
 import Cursor from "./cursor";
 import { usePresenceWithCursors } from "./use-cursors";
 
-export default function OtherCursors({
-  showChat = false,
-}: {
-  showChat: boolean;
-}) {
+export default function OtherCursors() {
   const otherUserIds = usePresenceWithCursors((state) =>
     Array.from(state.otherUsers.keys())
   );
@@ -28,7 +24,7 @@ export default function OtherCursors({
     <div style={style}>
       {otherUserIds.map((id) => {
         return (
-          <Cursor key={id} userId={id} fill={"#00f"} showChat={showChat} />
+          <Cursor key={id} userId={id} fill={"#00f"} />
         );
       })}
     </div>

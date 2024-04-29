@@ -1,6 +1,5 @@
 import type * as Party from "partykit/server";
 import type {
-  Metadata,
   Presence,
   User,
   // ClientMessage,
@@ -13,11 +12,10 @@ import {
 } from "./presence/presence-schema";
 
 export type ConnectionWithUser = Party.Connection<{
-  metadata?: Metadata;
   presence?: Presence;
 }>;
 
-const BROADCAST_INTERVAL = 1000 / 60; // 60fps
+const BROADCAST_INTERVAL = 1000 / 20; // 20fps
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -42,55 +40,10 @@ export default class PresenceServer implements Party.Server {
   interval: ReturnType<typeof setInterval> | null = null;
 
   static onBeforeConnect(req: Party.Request, lobby: Party.Lobby) {
-    // we assume that the request url is encoded into the request query param
-    const encodedHomeURL = new URL(req.url).searchParams.get("from");
+    const randomCheck = new URL(req.url).searchParams.get("from");
 
-    if (!encodedHomeURL) {
+    if (randomCheck != "cc") {
       return new Response("Not Allowed", { status: 403 });
-    }
-
-    const homeURL = new URL(decodeURIComponent(encodedHomeURL));
-
-    const WEBSITES = JSON.parse(
-      (lobby.env.WEBSITES || "[]") as string
-    ) as string[];
-
-    if (["localhost", "127.0.0.1", "0.0.0.0"].includes(homeURL.hostname)) {
-      return req;
-    }
-
-    const matchWith = homeURL.origin + homeURL.pathname;
-
-    const patterns = WEBSITES.map((site) => {
-      try {
-        // @ts-expect-error - URLPattern is not in the TS lib
-        return new URLPattern(site);
-      } catch (e) {
-        console.log(
-          `
-
-⚠️  Invalid URL pattern "${site}" in .env -> WEBSITES. 
-It should be a valid input to new URLPattern(). 
-Learn more: https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API
-
-`
-        );
-        throw e;
-      }
-    });
-
-    const allowed = patterns.some((pattern) => pattern.test(matchWith));
-    if (!allowed) {
-      const errMessage = `The URL ${matchWith} does not match any allowed pattern from ${lobby.env.WEBSITES}`;
-      // @ts-expect-error we're using dom types here. apparently
-      const pair = new WebSocketPair();
-      pair[1].accept();
-      pair[1].close(1011, errMessage || "Uncaught exception when connecting");
-      return new Response(null, {
-        status: 101,
-        // @ts-expect-error we're using dom types here. apparently
-        webSocket: pair[0],
-      });
     }
 
     return req;
@@ -100,19 +53,13 @@ Learn more: https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API
     connection: Party.Connection,
     { request }: Party.ConnectionContext
   ): void | Promise<void> {
-    const metadata = { country: request.cf?.country ?? null } as Metadata;
+    connection.send(`{"myid":"${connection.id}"}`);
 
-    // The client may set name and color (from the presence object) in the query string
-    const params = new URLSearchParams(request.url.split("?")[1]);
-    const presence = {
-      name: params.get("name") ?? undefined,
-      color: params.get("color") ?? undefined,
-    } as Presence;
+    const presence = {} as Presence;
 
     // Stash the metadata and the presence on the websocket
     connection.setState((prevState: User) => ({
       presence: { ...prevState?.presence, ...presence },
-      metadata,
     }));
 
     this.join(connection);
@@ -136,7 +83,6 @@ Learn more: https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API
   getUser(connection: ConnectionWithUser): User {
     return {
       presence: connection.state?.presence ?? ({} as Presence),
-      metadata: connection.state?.metadata ?? ({} as Metadata),
     };
   }
 

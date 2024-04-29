@@ -9,23 +9,13 @@ export type Cursor = {
 
 // user-modifiable fields
 export type Presence = {
-  name: string;
-  color: string;
   cursor?: Cursor | null;
-  message?: string | null;
-  spotlightColor?: string;
-};
-
-// set on the server, read-only for the duration of the session
-export type Metadata = {
-  country: string | null;
 };
 
 // additional fields that are set by the server
 // and do not change for the duration of the session
 export type User = {
   presence: Presence;
-  metadata: Metadata;
 };
 
 export type PartyMessage =
@@ -55,20 +45,11 @@ export const cursorSchema = z.object({
 });
 
 export const presenceSchema = z.object({
-  name: z.string(),
-  color: z.string(),
   cursor: cursorSchema.optional().nullable(),
-  message: z.string().optional().nullable(),
-  spotlightColor: z.string().optional(),
-});
-
-export const metadataSchema = z.object({
-  country: z.string().nullable(),
 });
 
 export const userSchema = z.object({
   presence: presenceSchema,
-  metadata: metadataSchema,
 });
 
 export const partyMessageSchema = z.discriminatedUnion("type", [

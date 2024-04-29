@@ -121,7 +121,10 @@ export const usePresence = create<PresenceStoreType>((set) => ({
       }
       const otherUsers = new Map(state.otherUsers);
       const user = otherUsers.get(id);
-      if (!user) return { otherUsers };
+      // if (!user) return { otherUsers };
+      if (!user) {
+        state.addUser(id, {} as User);
+      };
       otherUsers.set(id, { ...user, presence });
       return { otherUsers };
     });
@@ -176,13 +179,21 @@ export default function PresenceProvider(props: {
         : // string -> json
           JSON.parse(event.data);
 
+    // hack
+    if (!(event.data instanceof Blob)) {
+      if (data.myid) {
+        setMyId(data.myid);
+        return;
+      }
+    }
+
     const result = partyMessageSchema.safeParse(data);
     if (!result.success) return;
     const message = result.data;
 
     switch (message.type) {
       case "sync":
-        setMyId(socket.id);
+        // setMyId(socket.id);
         // create Map from message.users (which is id -> User)
         setUsers(new Map<string, User>(Object.entries(message.users)));
         setSynced(true);
@@ -194,14 +205,13 @@ export default function PresenceProvider(props: {
   };
 
   const socket = usePartySocket({
+    id: "0",
     host: props.host,
     // party: "presence",
-    room: props.room,
+    room: "rock",
     // Initial presence is sent in the query string
     query: {
-      name: props.presence.name,
-      color: props.presence.color,
-      from: window?.location.href,
+      from: document.multiplayerCursorsCC,
     },
     onMessage: (event) => handleMessage(event),
 
@@ -223,11 +233,12 @@ export default function PresenceProvider(props: {
           e
       ),
   });
+  document.multiplayerCursorsWs = socket;
 
   // Send initial presence when syncing
   useEffect(() => {
     if (socket) {
-      setMyId(socket.id);
+      //setMyId(socket.id);
       if (!synced) {
         const message: ClientMessage = {
           type: "update",

@@ -1,5 +1,4 @@
 import * as React from "react";
-import countryCodeEmoji from "./country-code-emoji";
 import type { User } from "./presence-schema";
 import { usePresenceWithCursors } from "./use-cursors";
 
@@ -10,7 +9,6 @@ import { usePresenceWithCursors } from "./use-cursors";
 export default function Cursor(props: {
   userId: string;
   fill: string;
-  showChat: boolean;
 }) {
   const user: User | null = usePresenceWithCursors(
     (state) => state.otherUsers.get(props.userId) || null
@@ -21,25 +19,11 @@ export default function Cursor(props: {
     x: user.presence.cursor.x,
     y: user.presence.cursor.y,
     pointer: user.presence.cursor.pointer,
-    country: user.metadata.country,
-    message: user.presence.message ?? null,
   };
 
   const offset = 10;
-  const flag = cursor.country ? `${countryCodeEmoji(cursor.country)} ` : "";
+  const flag = "🍪";
 
-  // Optional: show ghosted cursors unless the user is chatting
-  /*const styles =
-    !props.showChat || cursor.message !== null
-      ? {
-          opacity: 1.0,
-          zIndex: 1001,
-        }
-      : {
-          filter: "blur(1px)",
-          opacity: 0.7,
-          zIndex: -1,
-        };*/
   const styles = {
     opacity: 1.0,
     zIndex: 1001,
@@ -58,7 +42,7 @@ export default function Cursor(props: {
       ) : (
         <TouchPointer fill={props.fill} />
       )}
-      {cursor.message === null && cursor.country !== null && (
+      {true && (
         <div
           style={{
             position: "absolute",
@@ -70,26 +54,6 @@ export default function Cursor(props: {
           }}
         >
           {flag}
-        </div>
-      )}
-      {cursor.message !== null && (
-        <div
-          style={{
-            position: "absolute",
-            fontSize: "16px",
-            fontStyle: "normal",
-            fontFamily:
-              'system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
-            color: "white",
-            padding: "4px 9px 4px 9px",
-            borderRadius: "16px 16px 16px 16px",
-            whiteSpace: "nowrap",
-            backgroundColor: "rgba(52,199,89,1)", // or props.fill,
-            top: "17px",
-            left: "22px",
-          }}
-        >
-          {cursor.message}
         </div>
       )}
     </div>

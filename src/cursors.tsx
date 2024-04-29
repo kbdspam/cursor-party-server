@@ -5,19 +5,12 @@ import Cursors from "./presence/Cursors";
 
 declare const PARTYKIT_HOST: string;
 
-const pageId = window?.location.href
-  ? btoa(window.location.href.split(/[?#]/)[0])
-  : "default";
-
 function App() {
   return (
     <PresenceProvider
       host={PARTYKIT_HOST}
-      room={pageId}
-      presence={{
-        name: "Anonymous User",
-        color: "#0000f0",
-      }}
+      room={"rock"}
+      presence={{}}
     >
       <Cursors />
     </PresenceProvider>
