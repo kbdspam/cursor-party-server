@@ -61,7 +61,7 @@ export const partyMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("changes"),
     add: z.record(userSchema).optional(),
     presence: z.record(presenceSchema).optional(),
-    remove: z.array(z.string()).optional(),
+    //remove: z.array(z.string()).optional(),
   }),
 ]);
 
