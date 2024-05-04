@@ -16,6 +16,7 @@ import {
   type PartyMessage,
   decodeMessage,
   encodeClientMessage,
+  encodeClientMessage2,
   partyMessageSchema,
 } from "./presence-schema";
 
@@ -53,12 +54,13 @@ type PresenceStoreType = {
   addUser: (id: string, user: User) => void;
   removeUser: (id: string) => void;
   updateUser: (id: string, presence: Presence) => void;
+  updateUser2: (id: string, presence: Presence) => void;
 };
 
 export const usePresence = create<PresenceStoreType>((set) => ({
   myId: null,
   myself: null,
-  setMyId: (myId: string) => set({ myId }),
+  setMyId: (myId: string) => set({ myId: myId, myself: {presence: {}} }),
 
   synced: false,
   setSynced: (synced: boolean) => set({ synced }),
@@ -129,6 +131,20 @@ export const usePresence = create<PresenceStoreType>((set) => ({
       return { otherUsers };
     });
   },
+  updateUser2: (id: string, presence: Presence) => {
+    set((state) => {
+        if (id == "999999") {
+          console.log(state.otherUsers);
+          return {};
+        }
+        if (id === state.myId) {
+          return {};
+        }
+        const otherUsers = new Map(state.otherUsers);
+        state.otherUsers.set(id, {presence});
+        return { otherUsers };
+    });
+  },
 }));
 
 export const PresenceContext = createContext({});
@@ -144,6 +160,7 @@ export default function PresenceProvider(props: {
     setUsers,
     addUser,
     updateUser,
+    updateUser2,
     removeUser,
     pendingUpdate,
     clearPendingUpdate,
@@ -171,6 +188,48 @@ export default function PresenceProvider(props: {
   };
 
   const handleMessage = async (event: MessageEvent) => {
+    if (event.data instanceof Blob) {
+      return;
+    }
+    if (event.data.includes("myid")) {
+      setMyId(JSON.parse(event.data).myid);
+      return;
+    }
+    let lines = event.data.split("\n");
+    let type = "";
+    for (let line of lines) {
+      if (line == "your_id" || line == "sync" || line == "add" || line == "presence" || line == "remove") {
+        type = line;
+        continue;
+      }
+      if (type == "your_id") {
+        setMyId(line);
+      } else if (type == "sync" || type == "add" || type == "presence") {
+        const split = line.split(",");
+        const id = split[0];
+        if (id == "") {
+          continue;
+        }
+        let presence: Presence = {cursor: null};
+        if (split.length == 4) {
+          presence.cursor = {
+            x: +split[1],
+            y: +split[2],
+            pointer: split[3] == "m" ? "mouse" : "touch",
+          };
+        }
+        updateUser2(id, presence);
+      } else if (type == "remove") {
+        removeUser(line);
+      }
+    }
+    updateUser2("999999", {});
+    if (type == "sync") {
+      setSynced(true);
+    }
+  };
+
+  const handleMessage2 = async (event: MessageEvent) => {
     //const message = JSON.parse(event.data) as PartyMessage;
     const data =
       event.data instanceof Blob
@@ -244,16 +303,17 @@ export default function PresenceProvider(props: {
           type: "update",
           presence: props.presence,
         };
-        socket.send(encodeClientMessage(message));
+        socket.send(encodeClientMessage2(message));
       }
     }
   }, [props.presence, setMyId, synced, socket]);
 
+  // https://stackoverflow.com/questions/57788721/react-hook-delayed-useeffect-firing
   useEffect(() => {
     if (!pendingUpdate) return;
     if (!socket) return;
     const message: ClientMessage = { type: "update", presence: pendingUpdate };
-    socket.send(encodeClientMessage(message));
+    socket.send(encodeClientMessage2(message));
     clearPendingUpdate();
   }, [socket, pendingUpdate, clearPendingUpdate]);
 
