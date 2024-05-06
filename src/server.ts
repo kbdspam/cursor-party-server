@@ -28,7 +28,7 @@ const CORS = {
 export default class PresenceServer implements Party.Server {
   constructor(public party: Party.Party) {}
   options: Party.ServerOptions = {
-    hibernate: true,
+    hibernate: true, // TODO: disable hibernate?
   };
 
   // pending updates are stored in memory and sent every tick
@@ -38,6 +38,7 @@ export default class PresenceServer implements Party.Server {
 
   lastBroadcast = 0;
   interval: ReturnType<typeof setInterval> | null = null;
+  heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
   static onBeforeConnect(req: Party.Request, lobby: Party.Lobby) {
     const randomCheck = new URL(req.url).searchParams.get("from");
@@ -47,6 +48,12 @@ export default class PresenceServer implements Party.Server {
     }
 
     return req;
+  }
+
+  onStart(): void | Promise<void> {
+    this.heartbeatInterval = setInterval(() => {
+      //this.party.broadcast(`{"heartbeat": true}`)
+    }, 33 * 1000);
   }
 
   onConnect(

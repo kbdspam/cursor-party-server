@@ -38,6 +38,9 @@ type PresenceStoreType = {
   pendingUpdate: Presence | null;
   clearPendingUpdate: () => void;
 
+  pendingHeartbeat: boolean,
+  setPendingHeartbeat: (v: boolean) => void;
+
   // Makes an optimistic local update of the presence of the current user,
   // and also queues an update to be sent to the server
   updatePresence: (partial: Partial<Presence>) => void;
@@ -65,6 +68,10 @@ export const usePresence = create<PresenceStoreType>((set) => ({
 
   pendingUpdate: null,
   clearPendingUpdate: () => set({ pendingUpdate: null }),
+
+  pendingHeartbeat: false,
+  setPendingHeartbeat: (v: boolean) => set({ pendingHeartbeat: v }),
+
   updatePresence: (partial: Partial<Presence>) =>
     set((state) => {
       // Optimistically update myself, and also set a pending update
@@ -147,6 +154,8 @@ export default function PresenceProvider(props: {
     removeUser,
     pendingUpdate,
     clearPendingUpdate,
+    pendingHeartbeat,
+    setPendingHeartbeat,
     synced,
     setSynced,
   } = usePresence();
@@ -183,6 +192,9 @@ export default function PresenceProvider(props: {
     if (!(event.data instanceof Blob)) {
       if (data.myid) {
         setMyId(data.myid);
+        return;
+      } else if (data.heartbeat) {
+        setPendingHeartbeat(true);
         return;
       }
     }
@@ -256,6 +268,13 @@ export default function PresenceProvider(props: {
     socket.send(encodeClientMessage(message));
     clearPendingUpdate();
   }, [socket, pendingUpdate, clearPendingUpdate]);
+
+  useEffect(() => {
+    if (!pendingHeartbeat) return;
+    if (!socket) return;
+    socket.send(`{"heartbeat":true}`);
+    setPendingHeartbeat(false);
+  }, [socket, pendingHeartbeat, setPendingHeartbeat]);
 
   return (
     <PresenceContext.Provider value={{}}>
