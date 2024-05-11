@@ -86,3 +86,51 @@ export function encodeClientMessage(data: z.infer<typeof clientMessageSchema>) {
   return encode(clientMessageSchema.parse(data));
   //return encode(data);
 }
+
+function encodePresence(id: string, presence: Presence) {
+  if (presence.cursor == null) {
+    return id;
+  } else {
+    const p = presence.cursor.pointer == "mouse" ? "m" : "t";
+    return `${id},${presence.cursor.x},${presence.cursor.y},${p}`;
+  }
+}
+export function encodePartyMessage2(data: PartyMessage) {
+  if (data.type == "sync") {
+    const v =
+        "sync\n"
+      + Object.entries(data.users).map(([id, u]) => encodePresence(id, u.presence)).join("\n");
+      return v;
+  } else {
+    const v =
+        "add\n"
+      + Object.entries(data.add ? data.add : {}).map(([id, u]) => encodePresence(id, u.presence)).join("\n")
+      + "\npresence\n"
+      + Object.entries(data.presence ? data.presence : {}).map(([id, presence]) => encodePresence(id, presence)).join("\n");
+    return v;
+  }
+}
+export function encodeClientMessage2(data: ClientMessage) {
+  if (data.presence.cursor == null) {
+    //return encode([]);
+    return "";
+  } else {
+    const bleh = data.presence.cursor.pointer == "mouse" ? "m" : "t";
+    //return encode([data.presence.cursor.x, data.presence.cursor.y, bleh]);
+    return `${data.presence.cursor.x},${data.presence.cursor.y},${bleh}`;
+  }
+}
+export function decodeClientMessage(data: ArrayBufferLike) {
+  const a = decode(data);
+  if (a instanceof Array && a.length == 3) {
+    const p: Presence = {
+      cursor: {
+        x: +a[0],
+        y: +a[1],
+        pointer: a[2] == "m" ? "mouse" : "touch",
+      },
+    };
+    return p;
+  }
+  return {};
+}

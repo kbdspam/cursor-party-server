@@ -9,6 +9,7 @@ import {
   clientMessageSchema,
   decodeMessage,
   encodePartyMessage,
+  encodePartyMessage2,
 } from "./presence/presence-schema";
 
 export type ConnectionWithUser = Party.Connection<{
@@ -61,6 +62,7 @@ export default class PresenceServer implements Party.Server {
     { request }: Party.ConnectionContext
   ): void | Promise<void> {
     connection.send(`{"myid":"${connection.id}"}`);
+    //connection.send(`your_id\n${connection.id}`);
 
     const presence = {} as Presence;
 
@@ -118,7 +120,7 @@ export default class PresenceServer implements Party.Server {
     const sync = this.makeSyncMessage();
     //connection.send(JSON.stringify(sync));
     //console.log("sync", JSON.stringify(sync, null, 2));
-    connection.send(encodePartyMessage(sync));
+    connection.send(encodePartyMessage2(sync));
   }
 
   leave(connection: ConnectionWithUser) {
@@ -129,6 +131,37 @@ export default class PresenceServer implements Party.Server {
   }
 
   onMessage(
+    msg: string | ArrayBufferLike,
+    connection: ConnectionWithUser
+  ): void | Promise<void> {
+    if (typeof msg != "string") return;
+    const split = msg.split(",");
+    if (split.length > 5) {
+      connection.close();
+      return;
+    }
+    let presence: Presence = {};
+    if (split.length == 3) {
+      presence.cursor = {
+        x: +split[0],
+        y: +split[1],
+        pointer: split[2] == "m" ? "mouse" : "touch",
+      };
+    }
+    connection.setState((prevState) => {
+      this.enqueuePresence(connection.id, presence);
+      return {
+        ...prevState,
+        presence
+      }
+    });
+
+    this.broadcast().catch((err) => {
+      console.error(err);
+    });
+  }
+
+  onMessage2(
     msg: string | ArrayBufferLike,
     connection: ConnectionWithUser
   ): void | Promise<void> {
@@ -216,7 +249,7 @@ export default class PresenceServer implements Party.Server {
       remove: this.remove,
     } satisfies PartyMessage;
     //this.party.broadcast(JSON.stringify(update));
-    this.party.broadcast(encodePartyMessage(update));
+    this.party.broadcast(encodePartyMessage2(update));
     this.add = {};
     this.presence = {};
     this.remove = [];
