@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
+    />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>PartyKit: Everything's better with friends!</title>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="PartyKit" />
+    <meta name="description" content="Everything's better with friends!" />
+    <meta name="author" content="PartyKit" />
+    <!-- Theme Colour -->
+    <meta name="theme-color" content="#ffffff" />
+
+    <link rel="stylesheet" href="/normalize.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/meta.js"></script>
+  </head>
+  <body>
+    <main>
+      <section id="promo">
+        <h1>
+          <img src="/PartyKit.png" id="logo" />
+          <div>Cursor Party</div>
+        </h1>
+
+        <h2>Bring multiplayer cursors to any website with one line of code</h2>
+        <p>
+          Get your own with
+          <a href="https://github.com/partykit/cursor-party"
+            >these instructions on GitHub</a
+          >.
+        </p>
+        <hr />
+        <h2>You’re looking at a custom Cursor Party installation</h2>
+
+        <script>
+          if (window.__WEBSITES__) {
+            var websites;
+            try {
+              websites = JSON.parse(window.__WEBSITES__);
+
+              document.write(`<p>The following websites are in the allowlist:</p>`);
+              document.write(`<ul>`);
+              websites.forEach((website) => {
+                document.write(`<li><code>${website}</code></li>`);
+              });
+              document.write(`</ul>`);
+            } catch (e) {
+              document.write(
+                `<p>
+                  <span style="background: yellow">
+                    There was an error parsing the allowlist: ${e}
+                  </span>
+                </p>`
+              );
+            }
+          } else {
+            document.write(`
+            <p>
+              <span style="background: yellow">
+                Please create an .env file by copying .env.example, and edit it 
+                to add your website to the allowlist.
+              </span>
+            </p>
+            `);
+          }
+        </script>
+
+        <p>
+          Check the installation is working by opening two browser windows to
+          this page and watching for the cursors. (Make sure that this website
+          is listed above.)
+        </p>
+        <p>
+          Add multiplayer cursors to any site in the allowlist by
+          copy-and-pasting the following script tag just before the closing
+          <code>&lt;/body></code>:
+        </p>
+        <input
+          type="text"
+          value='&lt;script src="https://cursor-party.YOUR-PARTYKIT-USERNAME.partykit.dev/cursors.js">&lt;/script&gt;'
+          readonly
+        />
+        <p>
+          To configure or customize your Cursor Party,
+          <a href="https://github.com/partykit/cursor-party"
+            >read the docs</a
+          >.
+        </p>
+      </section>
+    </main>
+    <script src="/cursors.js"></script>
+  </body>
+</html>
