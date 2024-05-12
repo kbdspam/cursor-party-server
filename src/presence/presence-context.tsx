@@ -17,6 +17,7 @@ import {
   decodeMessage,
   encodeClientMessage,
   encodeClientMessage2,
+  encodeClientMessage3,
   partyMessageSchema,
 } from "./presence-schema";
 
@@ -57,7 +58,6 @@ type PresenceStoreType = {
   addUser: (id: string, user: User) => void;
   removeUser: (id: string) => void;
   updateUser: (id: string, presence: Presence) => void;
-  updateUser2: (id: string, presence: Presence) => void;
 };
 
 export const usePresence = create<PresenceStoreType>((set) => ({
@@ -138,20 +138,6 @@ export const usePresence = create<PresenceStoreType>((set) => ({
       return { otherUsers };
     });
   },
-  updateUser2: (id: string, presence: Presence) => {
-    set((state) => {
-        if (id == "999999") {
-          console.log(state.otherUsers);
-          return {};
-        }
-        if (id === state.myId) {
-          return {};
-        }
-        const otherUsers = new Map(state.otherUsers);
-        state.otherUsers.set(id, {presence});
-        return { otherUsers };
-    });
-  },
 }));
 
 export const PresenceContext = createContext({});
@@ -167,7 +153,6 @@ export default function PresenceProvider(props: {
     setUsers,
     addUser,
     updateUser,
-    updateUser2,
     removeUser,
     pendingUpdate,
     clearPendingUpdate,
@@ -198,10 +183,47 @@ export default function PresenceProvider(props: {
 
   const handleMessage = async (event: MessageEvent) => {
     if (event.data instanceof Blob) {
+      const buffer = await event.data.arrayBuffer();
+      let pos = 0;
+      const u32 = new Uint32Array(buffer);
+      const f32 = new Float32Array(buffer);
+      while (pos < u32.length) {
+        const type = u32[pos++];
+        const count = u32[pos++];
+        if (!count) { continue; }
+        if (type == 1 || type == 2) {
+          // add || presence
+          for (let i = 0; i < count; i++) {
+            let id = u32[pos++];
+            let pointer = "mouse";
+            if (id & (1<<31)) {
+              id &= ~(1<<31);
+              pointer = "touch";
+            }
+            const x = f32[pos++];
+            const y = f32[pos++];
+            updateUser(''+id, {
+              cursor: {
+                x: x,
+                y: y,
+                pointer: (pointer == "mouse") ? "mouse" : "touch"
+              }
+            });
+          }
+        } else if (type == 3) {
+          // remove
+          for (let i = 0; i < count; i++) {
+            removeUser(''+u32[pos++]);
+          }
+        }
+      }
       return;
     }
     if (event.data.includes("myid")) {
       setMyId(JSON.parse(event.data).myid);
+      return;
+    } else if (event.data.includes("heartbeat")) {
+      setPendingHeartbeat(true);
       return;
     }
     let lines = event.data.split("\n");
@@ -227,12 +249,11 @@ export default function PresenceProvider(props: {
             pointer: split[3] == "m" ? "mouse" : "touch",
           };
         }
-        updateUser2(id, presence);
+        updateUser(id, presence);
       } else if (type == "remove") {
         removeUser(line);
       }
     }
-    updateUser2("999999", {});
     if (type == "sync") {
       setSynced(true);
     }
@@ -315,17 +336,17 @@ export default function PresenceProvider(props: {
           type: "update",
           presence: props.presence,
         };
-        socket.send(encodeClientMessage2(message));
+        socket.send(encodeClientMessage3(message));
       }
     }
   }, [props.presence, setMyId, synced, socket]);
 
-  // https://stackoverflow.com/questions/57788721/react-hook-delayed-useeffect-firing
+  // TODO: https://stackoverflow.com/questions/57788721/react-hook-delayed-useeffect-firing
   useEffect(() => {
     if (!pendingUpdate) return;
     if (!socket) return;
     const message: ClientMessage = { type: "update", presence: pendingUpdate };
-    socket.send(encodeClientMessage2(message));
+    socket.send(encodeClientMessage3(message));
     clearPendingUpdate();
   }, [socket, pendingUpdate, clearPendingUpdate]);
 

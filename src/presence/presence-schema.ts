@@ -106,8 +106,84 @@ export function encodePartyMessage2(data: PartyMessage) {
         "add\n"
       + Object.entries(data.add ? data.add : {}).map(([id, u]) => encodePresence(id, u.presence)).join("\n")
       + "\npresence\n"
-      + Object.entries(data.presence ? data.presence : {}).map(([id, presence]) => encodePresence(id, presence)).join("\n");
+      + Object.entries(data.presence ? data.presence : {}).map(([id, presence]) => encodePresence(id, presence)).join("\n")
+      + "\nremove\n"
+      + Object.entries(data.remove ? data.remove : {}).join("\n");
     return v;
+  }
+}
+function encodeFuckFuck(
+  add?: { [id: string]: User },
+  presence?: { [id: string]: Presence },
+  remove?: string[])
+{
+  let number_of_u32s = 0;
+  let number_of_add = 0;
+  let number_of_presence = 0;
+  let number_of_remove = 0;
+  if (add) {
+    number_of_add = Object.keys(add).length;
+    if (number_of_add) {
+      number_of_u32s +=
+          1 // type
+        + 1 // count
+        + (3 * number_of_add);
+    }
+  }
+  if (presence) {
+    number_of_presence = Object.keys(presence).length;
+    if (number_of_presence) {
+      number_of_u32s +=
+          1 // type
+        + 1 // count
+        + (3 * number_of_presence);
+    }
+  }
+  if (remove) {
+    number_of_remove = remove.length;
+    if (number_of_remove) {
+      number_of_u32s +=
+          1 // type
+        + 1 // count
+        + (1 * number_of_remove);
+    }
+  }
+  const buffer = new ArrayBuffer(number_of_u32s * 4);
+  let pos = 0;
+  const u32 = new Uint32Array(buffer);
+  const f32 = new Float32Array(buffer);
+  if (add && number_of_add) {
+    u32[pos++] = 2; // presence type
+    u32[pos++] = number_of_add;
+    for (const [i, v] of Object.entries(add).entries()) {
+      u32[pos++] = +v[0] | (v[1].presence.cursor?.pointer == "mouse" ? 0 : (1<<31));
+      f32[pos++] = v[1].presence.cursor?.x ? v[1].presence.cursor?.x : 0;
+      f32[pos++] = v[1].presence.cursor?.y ? v[1].presence.cursor?.y : 0;
+    }
+  }
+  if (presence && number_of_presence) {
+    u32[pos++] = 2; // presence type
+    u32[pos++] = number_of_presence;
+    for (const [i, v] of Object.entries(presence).entries()) {
+      u32[pos++] = +v[0] | (v[1].cursor?.pointer == "mouse" ? 0 : (1<<31));
+      f32[pos++] = v[1].cursor?.x ? v[1].cursor?.x : 0;
+      f32[pos++] = v[1].cursor?.y ? v[1].cursor?.y : 0;
+    }
+  }
+  if (remove && number_of_remove) {
+    u32[pos++] = 3; // remove type
+    u32[pos++] = number_of_remove;
+    for (const [i, v] of remove.entries()) {
+      u32[pos++] = +v;
+    }
+  }
+  return buffer;
+}
+export function encodePartyMessage3(data: PartyMessage) {
+  if (data.type == "sync") {
+    return encodeFuckFuck(data.users);
+  } else {
+    return encodeFuckFuck(data.add, data.presence, data.remove);
   }
 }
 export function encodeClientMessage2(data: ClientMessage) {
@@ -118,6 +194,18 @@ export function encodeClientMessage2(data: ClientMessage) {
     const bleh = data.presence.cursor.pointer == "mouse" ? "m" : "t";
     //return encode([data.presence.cursor.x, data.presence.cursor.y, bleh]);
     return `${data.presence.cursor.x},${data.presence.cursor.y},${bleh}`;
+  }
+}
+export function encodeClientMessage3(data: ClientMessage) {
+  if (data.presence.cursor) {
+    const buffer = new ArrayBuffer(3 * 4);
+    const f32 = new Float32Array(buffer);
+    f32[0] = data.presence.cursor.x;
+    f32[1] = data.presence.cursor.y;
+    f32[2] = data.presence.cursor.pointer == "mouse" ? 0.0 : 1.0;
+    return buffer;
+  } else {
+    return new ArrayBuffer(12);
   }
 }
 export function decodeClientMessage(data: ArrayBufferLike) {

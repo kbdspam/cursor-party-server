@@ -10,6 +10,7 @@ import {
   decodeMessage,
   encodePartyMessage,
   encodePartyMessage2,
+  encodePartyMessage3,
 } from "./presence/presence-schema";
 
 export type ConnectionWithUser = Party.Connection<{
@@ -120,7 +121,10 @@ export default class PresenceServer implements Party.Server {
     const sync = this.makeSyncMessage();
     //connection.send(JSON.stringify(sync));
     //console.log("sync", JSON.stringify(sync, null, 2));
-    connection.send(encodePartyMessage2(sync));
+    const msg = encodePartyMessage3(sync);
+    if (msg.byteLength) {
+      connection.send(msg);
+    }
   }
 
   leave(connection: ConnectionWithUser) {
@@ -134,20 +138,36 @@ export default class PresenceServer implements Party.Server {
     msg: string | ArrayBufferLike,
     connection: ConnectionWithUser
   ): void | Promise<void> {
-    if (typeof msg != "string") return;
-    const split = msg.split(",");
-    if (split.length > 5) {
-      connection.close();
-      return;
-    }
     let presence: Presence = {};
-    if (split.length == 3) {
-      presence.cursor = {
-        x: +split[0],
-        y: +split[1],
-        pointer: split[2] == "m" ? "mouse" : "touch",
-      };
+    if (typeof msg != "string") {
+      const view = new DataView(msg);
+      if (view.byteLength == 0) {
+        presence.cursor = null;
+      } else if (view.byteLength == 12) {
+        presence.cursor = {
+          x: view.getFloat32(0, true),
+          y: view.getFloat32(4, true),
+          pointer: view.getFloat32(8, true) == 0.0 ? "mouse" : "touch",
+        };
+      } else {
+        connection.close();
+        return;
+      }
+    } else {
+      const split = msg.split(",");
+      if (split.length > 5) {
+        connection.close();
+        return;
+      }
+      if (split.length == 3) {
+        presence.cursor = {
+          x: +split[0],
+          y: +split[1],
+          pointer: split[2] == "m" ? "mouse" : "touch",
+        };
+      }
     }
+
     connection.setState((prevState) => {
       this.enqueuePresence(connection.id, presence);
       return {
@@ -249,7 +269,10 @@ export default class PresenceServer implements Party.Server {
       remove: this.remove,
     } satisfies PartyMessage;
     //this.party.broadcast(JSON.stringify(update));
-    this.party.broadcast(encodePartyMessage2(update));
+    const msg = encodePartyMessage3(update);
+    if (msg.byteLength) {
+      this.party.broadcast(msg);
+    }
     this.add = {};
     this.presence = {};
     this.remove = [];
