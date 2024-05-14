@@ -23,6 +23,10 @@ import {
 
 type UserMap = Map<string, User>;
 
+type CurrentTimeout = {
+  id: number,
+};
+
 type PresenceStoreType = {
   // The current user. The ID is the socket connection ID.
   // myself if set initially in a "sync" PartyMessage, and then
@@ -58,6 +62,8 @@ type PresenceStoreType = {
   addUser: (id: string, user: User) => void;
   removeUser: (id: string) => void;
   updateUser: (id: string, presence: Presence) => void;
+
+  currentTimeout: CurrentTimeout,
 };
 
 export const usePresence = create<PresenceStoreType>((set) => ({
@@ -138,6 +144,8 @@ export const usePresence = create<PresenceStoreType>((set) => ({
       return { otherUsers };
     });
   },
+
+  currentTimeout: {id: -1},
 }));
 
 export const PresenceContext = createContext({});
@@ -160,6 +168,7 @@ export default function PresenceProvider(props: {
     setPendingHeartbeat,
     synced,
     setSynced,
+    currentTimeout,
   } = usePresence();
 
   const updateUsers = (message: PartyMessage) => {
@@ -303,7 +312,7 @@ export default function PresenceProvider(props: {
     room: "rock",
     // Initial presence is sent in the query string
     query: {
-      from: document.multiplayerCursorsCC,
+      from: (document as any).multiplayerCursorsCC,
     },
     onMessage: (event) => handleMessage(event),
 
@@ -325,7 +334,7 @@ export default function PresenceProvider(props: {
           e
       ),
   });
-  document.multiplayerCursorsWs = socket;
+  (document as any).multiplayerCursorsWs = socket;
 
   // Send initial presence when syncing
   useEffect(() => {
@@ -341,13 +350,22 @@ export default function PresenceProvider(props: {
     }
   }, [props.presence, setMyId, synced, socket]);
 
+  const queueUpdate = () => {
+    if (currentTimeout.id == -1) {
+      currentTimeout.id = setTimeout(() => {
+        currentTimeout.id = -1;
+        const message: ClientMessage = { type: "update", presence: pendingUpdate ? pendingUpdate : {} };
+        socket.send(encodeClientMessage3(message));
+        clearPendingUpdate();
+      }, 25);
+    }
+  };
+
   // TODO: https://stackoverflow.com/questions/57788721/react-hook-delayed-useeffect-firing
   useEffect(() => {
     if (!pendingUpdate) return;
     if (!socket) return;
-    const message: ClientMessage = { type: "update", presence: pendingUpdate };
-    socket.send(encodeClientMessage3(message));
-    clearPendingUpdate();
+    queueUpdate();
   }, [socket, pendingUpdate, clearPendingUpdate]);
 
   useEffect(() => {
