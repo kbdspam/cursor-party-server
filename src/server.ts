@@ -141,19 +141,28 @@ export default class PresenceServer implements Party.Server {
     let presence: Presence = {};
     if (typeof msg != "string") {
       const view = new DataView(msg);
+      let pointer = "mouse";
       if (view.byteLength == 0) {
         presence.cursor = null;
-      } else if (view.byteLength == 12) {
+      } else if (/*view.byteLength == 12 ||*/ view.byteLength == 8) {
+        /*
+        if (view.byteLength == 12) {
+          pointer = view.getFloat32(8, true) == 0.0 ? "mouse" : "touch";
+        }
+        */
         presence.cursor = {
           x: view.getFloat32(0, true),
           y: view.getFloat32(4, true),
-          pointer: view.getFloat32(8, true) == 0.0 ? "mouse" : "touch",
+          pointer: pointer == "mouse" ? "mouse" : "touch",
         };
       } else {
         connection.close();
         return;
       }
     } else {
+      connection.close();
+      return;
+      /*
       const split = msg.split(",");
       if (split.length > 5) {
         connection.close();
@@ -166,6 +175,7 @@ export default class PresenceServer implements Party.Server {
           pointer: split[2] == "m" ? "mouse" : "touch",
         };
       }
+      */
     }
 
     connection.setState((prevState) => {

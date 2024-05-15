@@ -205,10 +205,12 @@ export default function PresenceProvider(props: {
           for (let i = 0; i < count; i++) {
             let id = u32[pos++];
             let pointer = "mouse";
+            /*
             if (id & (1<<31)) {
               id &= ~(1<<31);
               pointer = "touch";
             }
+            */
             const x = f32[pos++];
             const y = f32[pos++];
             updateUser(''+id, {

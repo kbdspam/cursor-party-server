@@ -156,7 +156,7 @@ function encodeFuckFuck(
     u32[pos++] = 2; // presence type
     u32[pos++] = number_of_add;
     for (const [i, v] of Object.entries(add).entries()) {
-      u32[pos++] = +v[0] | (v[1].presence.cursor?.pointer == "mouse" ? 0 : (1<<31));
+      u32[pos++] = +v[0]; //| (v[1].presence.cursor?.pointer == "mouse" ? 0 : (1<<31));
       f32[pos++] = v[1].presence.cursor?.x ? v[1].presence.cursor?.x : 0;
       f32[pos++] = v[1].presence.cursor?.y ? v[1].presence.cursor?.y : 0;
     }
@@ -165,7 +165,7 @@ function encodeFuckFuck(
     u32[pos++] = 2; // presence type
     u32[pos++] = number_of_presence;
     for (const [i, v] of Object.entries(presence).entries()) {
-      u32[pos++] = +v[0] | (v[1].cursor?.pointer == "mouse" ? 0 : (1<<31));
+      u32[pos++] = +v[0]; //| (v[1].cursor?.pointer == "mouse" ? 0 : (1<<31));
       f32[pos++] = v[1].cursor?.x ? v[1].cursor?.x : 0;
       f32[pos++] = v[1].cursor?.y ? v[1].cursor?.y : 0;
     }
@@ -198,11 +198,11 @@ export function encodeClientMessage2(data: ClientMessage) {
 }
 export function encodeClientMessage3(data: ClientMessage) {
   if (data.presence.cursor) {
-    const buffer = new ArrayBuffer(3 * 4);
+    const buffer = new ArrayBuffer(2 * 4);
     const f32 = new Float32Array(buffer);
     f32[0] = data.presence.cursor.x;
     f32[1] = data.presence.cursor.y;
-    f32[2] = data.presence.cursor.pointer == "mouse" ? 0.0 : 1.0;
+    //f32[2] = data.presence.cursor.pointer == "mouse" ? 0.0 : 1.0;
     return buffer;
   } else {
     return new ArrayBuffer(12);
