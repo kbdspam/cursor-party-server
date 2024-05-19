@@ -205,7 +205,7 @@ export function encodeClientMessage3(data: ClientMessage) {
     //f32[2] = data.presence.cursor.pointer == "mouse" ? 0.0 : 1.0;
     return buffer;
   } else {
-    return new ArrayBuffer(12);
+    return new ArrayBuffer(8);
   }
 }
 export function decodeClientMessage(data: ArrayBufferLike) {
