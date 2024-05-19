@@ -196,6 +196,7 @@ export default function useCursorTracking(
     otherUsers.forEach((user, id) => {
       otherUsersTransformed.set(id, transformCursor(user));
     });
+    (document as any).multiplayerCursorsCount = otherUsers.size;
     usePresenceWithCursors.setState({
       myId,
       myself: myselfTransformed,
