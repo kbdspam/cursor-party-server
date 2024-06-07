@@ -314,7 +314,7 @@ export default function PresenceProvider(props: {
     room: "rock",
     // Initial presence is sent in the query string
     query: {
-      from: (document as any).multiplayerCursorsCC,
+      from: (document as any).cursorPartyCC,
     },
     onMessage: (event) => handleMessage(event),
 
@@ -336,7 +336,7 @@ export default function PresenceProvider(props: {
           e
       ),
   });
-  (document as any).multiplayerCursorsWs = socket;
+  (document as any).cursorPartyWs = socket;
 
   // Send initial presence when syncing
   useEffect(() => {
