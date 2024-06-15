@@ -318,14 +318,17 @@ export default function PresenceProvider(props: {
     },
     onMessage: (event) => handleMessage(event),
 
-    onClose: (e) =>
+    onClose: (e) => {
+      setUsers(new Map<string, User>());
+      setSynced(false);
       console.warn(
         "Socket closed:",
         e.reason ||
           // @ts-ignore
           e.error ||
           e
-      ),
+      );
+    },
     onError: (e) =>
       console.error(
         "Socket error:",
