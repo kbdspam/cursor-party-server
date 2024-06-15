@@ -17,7 +17,7 @@ export type ConnectionWithUser = Party.Connection<{
   presence?: Presence;
 }>;
 
-const BROADCAST_INTERVAL = 1000 / 20; // 20fps
+const BROADCAST_INTERVAL = 1000 / 30; // 20fps
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
