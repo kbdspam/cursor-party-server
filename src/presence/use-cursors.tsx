@@ -38,6 +38,11 @@ export default function useCursorTracking(
     };
   });
 
+  // only effective way of clearing cursors when we close the socket...
+  (document as any).cursorPartyMurder = () => {
+    otherUsers.clear();
+  };
+
   // Always track window dimensions, and update scroll dimensions if required
   const [windowDimensions, setWindowDimensions] = useState<{
     x: number;
