@@ -26,9 +26,18 @@
         <br>
         <br>
         you can find the source at <a referrerpolicy="no-referrer" href="https://github.com/partykit/cursor-party">github.com/partykit/cursor-party</a>
+        <br>
+        <br>
+        <div id="counter">?</div>
       </section>
     </main>
     <script>document.cursorPartyCC = "cc";</script>
     <script src="/cursors.js"></script>
+    <script>
+      setInterval(() => {
+        if (document.cursorPartyCount >= 0)
+          document.getElementById("counter").innerHTML = `Connected: ${document.cursorPartyCount+1}`;
+      }, 1 * 1000);
+    </script>
   </body>
 </html>
