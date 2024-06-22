@@ -125,6 +125,7 @@ export default class PresenceServer implements Party.Server {
     if (msg.byteLength) {
       connection.send(msg);
     }
+    console.log(`join ${connection.id} ; connections = ${[...this.party.getConnections()].length}`);
   }
 
   leave(connection: ConnectionWithUser) {
@@ -132,6 +133,7 @@ export default class PresenceServer implements Party.Server {
     this.broadcast().catch((err) => {
       console.error(err);
     });
+    console.log(`left ${connection.id} ; connections = ${[...this.party.getConnections()].length}`);
   }
 
   onMessage(
